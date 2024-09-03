@@ -6,22 +6,24 @@
 #include <errno.h>
 #include <signal.h>
 
-#define MAX_INPUT_LENGTH 1024
+#define MAX_INPUT_LENGHT 1024
 #define INITIAL_ARGS_SIZE 10
 #define MAX_NUM_PIPES 20
 
-int parse_command(char *command, char ***args)
+// divide un comando en argumentos y los almacena en args
+int analizar_comando(char *comando, char ***args)
 {
     int size = INITIAL_ARGS_SIZE;
     int n = 0;
+
     *args = malloc(size * sizeof(char *));
     if (*args == NULL)
     {
-        perror("malloc");
+        perror("Error de malloc.");
         exit(EXIT_FAILURE);
     }
 
-    char *token = strtok(command, " \n");
+    char *token = strtok(comando, " \n");
     while (token != NULL)
     {
         if (n >= size)
@@ -30,94 +32,167 @@ int parse_command(char *command, char ***args)
             *args = realloc(*args, size * sizeof(char *));
             if (*args == NULL)
             {
-                perror("realloc");
+                perror("Error de realloc.");
                 exit(EXIT_FAILURE);
             }
         }
         (*args)[n++] = token;
         token = strtok(NULL, " \n");
     }
-    (*args)[n] = NULL; // Terminar el arreglo de argumentos con NULL
 
+    (*args)[n] = NULL; // terminar el arreglo de argumentos con NULL
     return n;
 }
 
-void execute_command(char *command)
+// ejecuta un comando
+void ejecutar_comando(char *comando)
 {
     char **args;
-    int num_params = parse_command(command, &args);
+    int num_parametros = analizar_comando(comando, &args);
 
-    // Ejecutar el comando
+    // ejecutar el comando
     if (execvp(args[0], args) == -1)
     {
-        perror("Error al ejecutar el comando");
+        perror("Error al ejecutar el comando.");
         exit(EXIT_FAILURE);
     }
 
-    // Liberar la memoria
+    // liberar memoria
     free(args);
 }
 
-void execute_pipe_commands(char *commands[], int num_commands)
+// ejecuta comandos conectados por pipes (tuberías)
+void ejecutar_comandos_con_pipes(char *comandos[], int num_comandos)
 {
     int pipe_fd[MAX_NUM_PIPES][2];
     pid_t pid;
 
-    // Crear los pipes necesarios
-    for (int i = 0; i < num_commands - 1; i++)
+    // crear las tuberías necesarias
+    for (int i = 0; i < num_comandos - 1; i++)
     {
         if (pipe(pipe_fd[i]) == -1)
         {
-            perror("Error al crear la tubería");
+            perror("Error al crear la tubería.");
             exit(EXIT_FAILURE);
         }
     }
 
-    // Iterar sobre cada comando para crear un proceso hijo que lo ejecute
-    for (int i = 0; i < num_commands; i++)
+    // iterar sobre cada comando para crear un proceso hijo que lo ejecute
+    for (int i = 0; i < num_comandos; i++)
     {
         pid = fork();
+
         if (pid == -1)
         {
-            perror("Error al crear el proceso hijo");
+            perror("Error al crear el Proceso-Hijo.");
             exit(EXIT_FAILURE);
         }
         else if (pid == 0)
         {
-            // Si no es el primer comando, redirige la entrada estándar
+
+            // si no es el primer comando, redirige la entrada estándar
             if (i > 0)
             {
                 dup2(pipe_fd[i - 1][0], STDIN_FILENO);
             }
-            // Si no es el último comando, redirige la salida estándar
-            if (i < num_commands - 1)
+
+            // y si no es el último, redirige la salida estándar
+            if (i < num_comandos - 1)
             {
                 dup2(pipe_fd[i][1], STDOUT_FILENO);
             }
-            // Cerrar todos los pipes en el proceso hijo para que no haya fugas
-            for (int j = 0; j < num_commands - 1; j++)
+
+            // cerrar todas las tuberías en el proceso hijo para que no haya fugas
+            for (int j = 0; j < num_comandos - 1; j++)
             {
                 close(pipe_fd[j][0]);
                 close(pipe_fd[j][1]);
             }
 
-            // Ejecutar el comando actual
-            execute_command(commands[i]);
-            perror("Error al ejecutar el comando");
+            // ejecutar el comando actual
+            ejecutar_comando(comandos[i]);
+            perror("Error al ejecutar el comando.");
             exit(EXIT_FAILURE);
         }
     }
 
-    // Cerrar todos los pipes en el proceso padre
-    for (int i = 0; i < num_commands - 1; i++)
+    // cerrar todas las tuberías en el proceso padre
+    for (int i = 0; i < num_comandos - 1; i++)
     {
         close(pipe_fd[i][0]);
         close(pipe_fd[i][1]);
     }
 
-    // Espera a que todos los procesos hijos terminen
-    for (int i = 0; i < num_commands; i++)
+    // espera a que todos los procesos hijos terminen
+    for (int i = 0; i < num_comandos; i++)
     {
         wait(NULL);
     }
+}
+
+// la shell
+int main()
+{
+    char entrada[MAX_INPUT_LENGHT];
+    char *comandos[MAX_NUM_PIPES + 1];
+
+    while (1)
+    {
+        printf("NuestraShell:$ ");
+        fflush(stdout);
+
+        if (fgets(entrada, sizeof(entrada), stdin) == NULL)
+        {
+            if (feof(stdin))
+            {
+                break; //(Ctrl+D)
+            }
+            perror("Error al leer la entrada.");
+            exit(EXIT_FAILURE);
+        }
+
+        entrada[strcspn(entrada, "\n")] = '\0'; // elimina el salto de línea al final
+
+        if (strcmp(entrada, "exit") == 0)
+        {
+            break;
+        }
+
+        int num_comandos = 0;
+        comandos[num_comandos] = strtok(entrada, "|");
+
+        while (comandos[num_comandos] != NULL && num_comandos < MAX_NUM_PIPES)
+        {
+            comandos[++num_comandos] = strtok(NULL, "|");
+        }
+
+        for (int i = 0; i < num_comandos; i++)
+        {
+            comandos[i] = comandos[i] + strspn(comandos[i], " ");
+        }
+
+        if (num_comandos > 1)
+        {
+            ejecutar_comandos_con_pipes(comandos, num_comandos);
+        }
+        else
+        {
+            pid_t pid = fork();
+
+            if (pid == 0)
+            {
+                ejecutar_comando(comandos[0]);
+            }
+            else if (pid < 0)
+            {
+                perror("Error al crear el Proceso-Hijo.");
+            }
+            else
+            {
+                wait(NULL);
+            }
+        }
+    }
+
+    return 0;
 }
