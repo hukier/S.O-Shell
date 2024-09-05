@@ -32,7 +32,7 @@ void ejecutar_comando(char *comando)
     // ejecuta el comando
     if (execvp(argumentos[0], argumentos) == -1)
     {
-        perror("Error al ejecutar el comando");
+        perror("Error al ejecutar el comando.");
         exit(EXIT_FAILURE);
     }
 }
