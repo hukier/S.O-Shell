@@ -17,7 +17,7 @@ Para compilar el proyecto, sigue los siguientes pasos:
 1. Abre una terminal en la ubicación del proyecto.
 2. Ejecuta el siguiente comando:
    ```
-   gcc -o shell shell.c
+   gcc -o Shell Shell.c
    ```
 
 ## Ejecución
@@ -27,7 +27,7 @@ Para ejecutar la Shell, sigue los siguientes pasos:
 1. Abre una terminal en la ubicación del proyecto.
 2. Ejecuta el siguiente comando:
    ```
-   ./shell
+   ./Shell
    ```
 
 ## Ejecución de comandos
