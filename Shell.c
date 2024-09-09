@@ -10,7 +10,7 @@
     #define MAX_ARGUMENTOS 150
     #define MAX_FAVS 100
 
-    // Estructura para mantener los comandos favoritos
+    // Estructura para guardar los comandos favoritos
     typedef struct {
         char *comandos[MAX_FAVS];
         int num_comandos;
@@ -36,10 +36,8 @@
     // Función para ejecutar el comando
     void ejecutar_comando(char *comando)
     {
-        char *argumentos[MAX_ARGUMENTOS + 1]; // Incrementa el tamaño del array para soportar 150 argumentos
+        char *argumentos[MAX_ARGUMENTOS + 1]; // incrementa el tamaño del array para soportar 150 argumentos
         int num_parametros = parsear_comando(comando, argumentos);
-
-        // ejecuta el comando
         if (execvp(argumentos[0], argumentos) == -1)
         {
             perror("Error al ejecutar el comando.");
@@ -90,7 +88,6 @@
                     close(pipe_fd[j][0]);
                     close(pipe_fd[j][1]);
                 }
-
                 // se ejecuta el comando actual
                 ejecutar_comando(comandos[i]);
                 perror("Error al ejecutar el comando.");
@@ -120,16 +117,14 @@
             printf("Lista de favoritos llena.\n");
             return;
         }
-
         // Verifica si el comando ya está en favoritos
         for (int i = 0; i < favoritos.num_comandos; i++)
         {
             if (strcmp(favoritos.comandos[i], comando) == 0)
             {
-                return; // No lo agrega si ya está
+                return; // no lo agrega si ya está
             }
         }
-
         favoritos.comandos[favoritos.num_comandos] = strdup(comando);
         favoritos.num_comandos++;
     }
@@ -195,16 +190,14 @@
             perror("Error al abrir el archivo de favoritos para guardar.");
             return;
         }
-
         for (int i = 0; i < favoritos.num_comandos; i++)
         {
             fprintf(archivo, "%s\n", favoritos.comandos[i]);
         }
-
         fclose(archivo);
     }
 
-        // Función para cargar los favoritos desde un archivo dado
+    // Función para cargar los favoritos desde un archivo dado
     void cargar_favoritos(char *ruta)
     {
         FILE *archivo = fopen(ruta, "r");
@@ -217,21 +210,18 @@
         char linea[MAX_LONGITUD_ENTRADA];
         while (fgets(linea, sizeof(linea), archivo))
         {
-            linea[strcspn(linea, "\n")] = '\0'; // Elimina el salto de línea
+            linea[strcspn(linea, "\n")] = '\0'; 
             agregar_a_favoritos(linea);
         }
-
         fclose(archivo);
         printf("Favoritos cargados desde %s.\n", ruta);
     }
-
 
     // Función para crear el archivo de favoritos
     void crear_archivo_favoritos(char *ruta)
     {
         strncpy(favoritos.archivo_favoritos, ruta, sizeof(favoritos.archivo_favoritos) - 1);
         favoritos.archivo_favoritos[sizeof(favoritos.archivo_favoritos) - 1] = '\0';
-
         FILE *archivo = fopen(ruta, "w");
         if (!archivo)
         {
@@ -315,7 +305,7 @@
                 break;
             }
 
-            // manejo del recordatorio
+            // manejo del recordatorio (parte 2.2)
             if (strncmp(entrada, "set recordatorio", 16) == 0)
             {
                 char *tiempo_str = strtok(entrada + 17, " ");
@@ -329,17 +319,16 @@
                         printf("Recordatorio programado en %d segundos: %s\n", tiempo, mensaje);
                         pid_t pid = fork();
 
-                        if (pid == 0)
+                        if (pid == 0) //proceso hijo
                         {
-                            // Código del proceso hijo, que duerme y luego muestra el recordatorio
                             setrecordatorio(tiempo, mensaje);
-                            exit(0); // Finalizar el proceso hijo
+                            exit(0);
                         }
                         else if (pid < 0)
                         {
                             perror("Error al crear el proceso hijo.");
                         }
-                        // El proceso padre continúa la ejecución normal de la shell
+                        // el proceso padre continúa la ejecución normal de la shell
                     }
                     else
                     {
@@ -353,7 +342,7 @@
                 continue;
             }
 
-            // Manejo del comando "favs"
+            // manejo del comando "favs" (parte 2.1)
             if (strncmp(entrada, "favs", 4) == 0)
             {
                 char *subcomando = strtok(entrada + 5, " ");
@@ -415,7 +404,7 @@
                 continue;
             }
 
-            // Manejo de pipes y comandos normales
+            // manejo de pipes y comandos normales (parte 1)
             int num_comandos = 0;
             comandos[num_comandos] = strtok(entrada, "|");
             while (comandos[num_comandos] != NULL && num_comandos < MAX_NUM_PIPES)
