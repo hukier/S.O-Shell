@@ -5,9 +5,9 @@
     #include <sys/wait.h>
     #include <errno.h>
 
-    #define MAX_INPUT_LENGHT 1024
+    #define MAX_LONGITUD_ENTRADA 1024
     #define MAX_NUM_PIPES 20
-    #define INITIAL_ARGS_SIZE 150
+    #define MAX_ARGUMENTOS 150
     #define MAX_FAVS 100
 
     // Estructura para mantener los comandos favoritos
@@ -27,7 +27,7 @@
         {
             if (*argumentos[n] != '\0')
                 n++;
-            if (n >= INITIAL_ARGS_SIZE)
+            if (n >= MAX_ARGUMENTOS)
                 break;
         }
         return n;
@@ -36,7 +36,7 @@
     // Función para ejecutar el comando
     void ejecutar_comando(char *comando)
     {
-        char *argumentos[INITIAL_ARGS_SIZE + 1]; // Incrementa el tamaño del array para soportar 150 argumentos
+        char *argumentos[MAX_ARGUMENTOS + 1]; // Incrementa el tamaño del array para soportar 150 argumentos
         int num_parametros = parsear_comando(comando, argumentos);
 
         // ejecuta el comando
@@ -214,7 +214,7 @@
             return;
         }
 
-        char linea[MAX_INPUT_LENGHT];
+        char linea[MAX_LONGITUD_ENTRADA];
         while (fgets(linea, sizeof(linea), archivo))
         {
             linea[strcspn(linea, "\n")] = '\0'; // Elimina el salto de línea
@@ -289,7 +289,7 @@
     // Función principal (main)
     int main()
     {
-        char entrada[MAX_INPUT_LENGHT];
+        char entrada[MAX_LONGITUD_ENTRADA];
         char *comandos[MAX_NUM_PIPES + 1]; // aquí se almacenan los comandos separados
 
         while (1)
